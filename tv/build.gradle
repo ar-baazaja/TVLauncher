@@ -1,0 +1,160 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.devtools.ksp' version '1.9.10-1.0.13'
+}
+
+android {
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.afzaln.besttvlauncher"
+        minSdk 29
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            Properties keyProps = new Properties()
+            File keyProperties = file('../signing.properties')
+            if (keyProperties.exists()) {
+                // when building locally, use signing properties from keystore.properties
+                keyProps.load(new FileInputStream(keyProperties))
+            } else {
+                // when building CI server, use signing properties from environment variables
+                def releaseProperties = new ByteArrayInputStream((System.getenv('RELEASE_SIGNING_PROPERTIES') as String).bytes)
+                keyProps.load(releaseProperties)
+            }
+
+            storeFile file(keyProps['store'])
+            keyAlias keyProps['alias']
+            storePassword keyProps['storePass']
+            keyPassword keyProps['pass']
+        }
+
+        debug {
+            storeFile file("../debug.keystore")
+            keyAlias "besttvlauncher"
+            storePassword "tvlauncher"
+            keyPassword "tvlauncher"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        benchmark {
+            initWith buildTypes.release
+            signingConfig signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'benchmark-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+
+        if (project.findProperty("com.afzaln.besttvlauncher.enableComposeCompilerReports") == "true") {
+            freeCompilerArgs += [
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                            project.buildDir.absolutePath + "/compose_metrics"
+            ]
+            freeCompilerArgs += [
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                            project.buildDir.absolutePath + "/compose_metrics"
+            ]
+        }
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.3'
+    }
+
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+
+    kotlin {
+        sourceSets {
+            debug {
+                kotlin.srcDir("build/generated/ksp/debug/kotlin")
+            }
+            release {
+                kotlin.srcDir("build/generated/ksp/release/kotlin")
+            }
+        }
+    }
+    namespace 'com.afzaln.besttvlauncher'
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+
+    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.leanback:leanback:1.0.0")
+    implementation("com.github.bumptech.glide:glide:4.13.2")
+    implementation("com.afzaln:android-tvprovider:1.1.0-alpha01-1.0.1")
+    implementation("androidx.preference:preference-ktx:1.2.0")
+    implementation("androidx.palette:palette-ktx:1.0.0")
+
+    // Architecture
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
+
+    // Leanback
+    implementation("androidx.leanback:leanback-preference:1.2.0-alpha02")
+
+    // Compose
+    implementation("androidx.activity:activity-compose:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0-alpha03")
+    implementation("androidx.compose.ui:ui:$compose_version")
+    implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
+    implementation("androidx.compose.runtime:runtime-livedata:$compose_version")
+    implementation("androidx.compose.material3:material3:1.1.0-alpha02")
+    implementation("androidx.compose.material:material:$compose_version")
+    implementation("androidx.compose.foundation:foundation:$compose_version")
+    implementation("androidx.navigation:navigation-compose:2.7.4")
+    implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+    implementation("androidx.tv:tv-foundation:1.0.0-alpha10")
+
+    implementation("com.google.accompanist:accompanist-pager:0.27.0")
+    implementation("com.google.accompanist:accompanist-placeholder:0.27.0")
+    implementation "com.google.accompanist:accompanist-drawablepainter:0.27.0"
+
+    // Debug
+    implementation("com.squareup.logcat:logcat:0.1")
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
+    androidTestImplementation 'androidx.test.ext:junit:1.1.4'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
+
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+    debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
+
+}
